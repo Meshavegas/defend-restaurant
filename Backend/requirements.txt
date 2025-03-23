@@ -1,5 +1,25 @@
-sqlalchemy>=1.4.0
-fastapi>=0.68.0
-pydantic>=1.8.0
-uvicorn>=0.15.0
-python-dotenv>=0.19.0
+# Framework FastAPI et serveur ASGI
+fastapi>=0.103.1
+uvicorn>=0.23.2
+
+# ORM et SQL
+sqlalchemy>=2.0.20
+alembic>=1.12.0
+
+# Validation et typage
+pydantic>=2.3.0
+pydantic-settings>=2.0.3
+email-validator>=2.0.0
+
+# Sécurité et authentification
+python-jose>=3.3.0
+passlib>=1.7.4
+python-multipart>=0.0.6
+bcrypt>=4.0.1
+
+# Utilitaires
+python-dotenv>=1.0.0
+httpx>=0.25.0
+
+# Tests
+pytest>=7.4.2
