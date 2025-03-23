@@ -16,6 +16,9 @@ export const images = {
   //   users: require("../assets/users.jpg"),
   //   orders: require("../assets/orders.jpg"),
   delivery: require("../assets/delivery.jpg"),
+  fufu: require("../assets/Fufu.jpg"),
+  ndole: require("../assets/ndole.jpg"),
+  rice: require("../assets/rice.jpg"),
   //   tablereservation: require("../assets/tablereservation.jpg"),
   bg: require("../assets/image.png"),
 };
