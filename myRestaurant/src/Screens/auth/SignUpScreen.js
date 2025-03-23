@@ -1,17 +1,28 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Image,
+  Alert,
+} from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
+import { images } from "../../const/images";
 
 const SignUpScreen = ({ navigation }) => {
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   const validateInputs = () => {
-   
     if (/^[6]\d{8,}$/.test(phone)) {
-      Alert.alert("Invalid Phone", "Phone number must be  9 digits and starts with a 6.");
+      Alert.alert(
+        "Invalid Phone",
+        "Phone number must be  9 digits and starts with a 6."
+      );
       return false;
     }
 
@@ -21,7 +32,10 @@ const SignUpScreen = ({ navigation }) => {
     }
 
     if (password.length < 6) {
-      Alert.alert("Weak Password", "Password must be at least 6 characters long.");
+      Alert.alert(
+        "Weak Password",
+        "Password must be at least 6 characters long."
+      );
       return false;
     }
 
@@ -30,7 +44,7 @@ const SignUpScreen = ({ navigation }) => {
 
   const handleSignUp = () => {
     if (validateInputs()) {
-      console.log('User Data:', { name, phone, email, password });
+      console.log("User Data:", { name, phone, email, password });
       navigation.navigate("Home");
     }
   };
@@ -38,12 +52,15 @@ const SignUpScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       {/* Back Button */}
-      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => navigation.goBack()}
+      >
         <Ionicons name="arrow-back-outline" color="white" size={30} />
       </TouchableOpacity>
 
       {/* Logo */}
-      <Image style={styles.logo} source={require('../assets/logo.jpg')} />
+      <Image style={styles.logo} source={images.logo} />
 
       {/* Sign Up Title */}
       <Text style={styles.title}>Sign Up</Text>
@@ -89,7 +106,7 @@ const SignUpScreen = ({ navigation }) => {
       {/* Login Link */}
       <View style={styles.loginLink}>
         <Text style={styles.loginText}>Already have an account?</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+        <TouchableOpacity onPress={() => navigation.navigate("Login")}>
           <Text style={styles.loginLinkText}>Login</Text>
         </TouchableOpacity>
       </View>
@@ -102,9 +119,9 @@ export default SignUpScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'black',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "black",
     padding: 20,
   },
   backButton: {
@@ -116,7 +133,7 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    resizeMode: 'contain',
+    resizeMode: "contain",
     marginBottom: 20,
   },
   title: {
@@ -126,41 +143,41 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   input: {
-    width: '100%',
+    width: "100%",
     height: 50,
-    borderColor: '#fff',
+    borderColor: "#fff",
     borderWidth: 1,
     borderRadius: 25,
     paddingLeft: 15,
     marginBottom: 15,
-    color:"white"
+    color: "white",
   },
   signUpButton: {
-    width: '100%',
+    width: "100%",
     height: 50,
-    backgroundColor: '#FEB301',
+    backgroundColor: "#FEB301",
     borderRadius: 25,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 20,
   },
   signUpText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   loginLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   loginText: {
     fontSize: 16,
-    color: '#ccc',
+    color: "#ccc",
   },
   loginLinkText: {
     fontSize: 16,
-    color: '#FEB301',
-    fontWeight: 'bold',
+    color: "#FEB301",
+    fontWeight: "bold",
     marginLeft: 5,
   },
 });

@@ -1,26 +1,35 @@
-import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ImageBackground, Dimensions } from 'react-native';
+import React from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+  ImageBackground,
+  Dimensions,
+} from "react-native";
+import { images } from "../const/images";
 
-const { width, height } = Dimensions.get('window'); // Get screen width & height
+const { width, height } = Dimensions.get("window");
 
 const WelcomeScreen = ({ navigation }) => {
   const handleLogin = () => {
-    navigation.navigate('Login'); // Navigate to the Login screen
+    navigation.navigate("Login"); // Navigate to the Login screen
   };
 
   const handleSignUp = () => {
-    navigation.navigate('SignUp'); // Navigate to the Sign Up screen
+    navigation.navigate("SignUp"); // Navigate to the Sign Up screen
   };
 
   return (
-    <ImageBackground 
-      source={require('../assets/image.png')}  // Replace with your background image
+    <ImageBackground
+      source={images.bg} // Replace with your background image
       style={styles.imageBackground}
       resizeMode="cover"
     >
       <View style={styles.overlay}>
         {/* Logo */}
-        <Image style={styles.logo} source={require('../assets/logo.jpg')} />
+        <Image style={styles.logo} source={images.logo} />
 
         {/* Welcome Text */}
         <Text style={styles.welcomeText}>Welcome!!</Text>
@@ -48,64 +57,64 @@ const styles = StyleSheet.create({
     width: width, // Full width of the screen
     height: height, // Full height of the screen
     flex: 1, // Ensures it takes the whole screen
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   overlay: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.3)', // Dark overlay to make text visible
-    width: '100%',
+    backgroundColor: "rgba(0,0,0,0.3)", // Dark overlay to make text visible
+    width: "100%",
   },
   logo: {
     width: 100,
     height: 100,
     borderRadius: 50,
-    resizeMode: 'contain',
+    resizeMode: "contain",
     marginVertical: 20,
   },
   welcomeText: {
     fontSize: 32,
-    fontWeight: 'bold',
-    color: 'white',
+    fontWeight: "bold",
+    color: "white",
     marginTop: 40,
   },
   loginButton: {
-    width: '80%',
+    width: "80%",
     height: 54,
-    backgroundColor: '#FEB301',
+    backgroundColor: "#FEB301",
     borderRadius: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginVertical: 10,
     borderWidth: 2,
-    borderColor: 'gray',
+    borderColor: "gray",
   },
   loginText: {
-    color: 'white',
+    color: "white",
     fontSize: 23,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   orText: {
-    color: 'white',
+    color: "white",
     fontSize: 23,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginVertical: 10,
   },
   signUpButton: {
-    width: '80%',
+    width: "80%",
     height: 54,
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderRadius: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     borderWidth: 2,
-    borderColor: 'gray',
+    borderColor: "gray",
   },
   signUpText: {
-    color: 'black',
+    color: "black",
     fontSize: 23,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
 });
