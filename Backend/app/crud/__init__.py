@@ -9,6 +9,7 @@ from app.crud.user import (
     is_superuser
 )
 from app.crud.reservation import reservation
-from app.crud.menu import menu_item, category
+from app.crud.menu import MenuItem
+from app.crud.category import category
 from app.crud.order import order, order_item
 from app.crud.delivery import delivery

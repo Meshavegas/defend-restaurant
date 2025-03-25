@@ -17,6 +17,7 @@ class Category(Base, TimestampMixin):
 class MenuItem(Base, TimestampMixin):
     __tablename__ = "menu_items"
     
+    image_object_name = Column(String, nullable=True)
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True, nullable=False)
     description = Column(Text, nullable=True)
