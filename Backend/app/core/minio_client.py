@@ -7,7 +7,7 @@ from datetime import timedelta
 class MinioClient:
     def __init__(self):
         self.client = Minio(
-            "minio:9000",  # adjust host:port as needed
+            "rainago.com:9000/",  # adjust host:port as needed
             access_key="xnnvo0Btj8UDtR3GC1vw",  # replace with your access key
             secret_key="vjsHLJvjaGnOOER2QqqQXebKWQDb47PGfKL3vgze",  # replace with your secret key
             secure=False  # set to True if using HTTPS
@@ -17,6 +17,7 @@ class MinioClient:
     async def upload_file(self, file: UploadFile, object_name: str) -> str:
         try:
             # Ensure bucket exists
+            print("Checking if bucket exists")
             if not self.client.bucket_exists(self.bucket_name):
                 self.client.make_bucket(self.bucket_name)
 

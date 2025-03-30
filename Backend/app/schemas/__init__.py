@@ -4,4 +4,4 @@ from .menu import CategoryCreate, CategoryUpdate, MenuItemCreate, MenuItemUpdate
 from .order import OrderCreate, OrderUpdate, OrderItemCreate, OrderItemUpdate
 from .reservation import ReservationCreate, ReservationUpdate
 from .delivery import DeliveryCreate, DeliveryUpdate
-from .category import CategoryCreate, CategoryUpdate
+from .category import CategoryCreate, CategoryUpdate, Category

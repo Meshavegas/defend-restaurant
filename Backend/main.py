@@ -3,6 +3,7 @@ import sys
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.db.base_class import init_db, Base, engine
 
 # Configure logging
 logging.basicConfig(
@@ -41,12 +42,17 @@ def create_application() -> FastAPI:
         # Include API router
         _app.include_router(api_router, prefix="/api/v1")
 
+
         return _app
     except Exception as e:
         logger.error(f"Failed to create application: {e}")
         raise
 
 app = create_application()
+
+
+Base.metadata.create_all(bind=engine)
+
 
 @app.get("/")
 async def root():

@@ -23,7 +23,7 @@ async def create_category(
             raise HTTPException(status_code=400, detail="Name is required")
 
         category_in = schemas.CategoryCreate(**category_data)
-        return category.create_category(db, obj_in=category_in)
+        return category.create_category(db, category_in)  # Changed this line
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -40,10 +40,10 @@ def get_category(
     id: int,
     db: Session = Depends(deps.get_db)
 ):
-    category = crud.category.get(db, id=id)
-    if not category:
+    db_category = category.get_category(db, category_id=id)  # Changed this line
+    if not db_category:
         raise HTTPException(status_code=404, detail="Category not found")
-    return category
+    return db_category
 
 @router.put("/categories/{id}", response_model=schemas.Category)
 async def update_category(
@@ -53,8 +53,8 @@ async def update_category(
     db: Session = Depends(deps.get_db)
 ):
     try:
-        category = category.get_category(db, id=id)
-        if not category:
+        db_category = category.get_category(db, category_id=id)  # Changed this line
+        if not db_category:
             raise HTTPException(status_code=404, detail="Category not found")
         
         update_data = {}
@@ -64,7 +64,7 @@ async def update_category(
             update_data["description"] = description.strip()
         
         category_in = schemas.CategoryUpdate(**update_data)
-        return category.update_category(db, db_obj=category, obj_in=category_in)
+        return category.update_category(db, id, category_in)  # Changed this line
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -73,7 +73,7 @@ def delete_category(
     id: int,
     db: Session = Depends(deps.get_db)
 ):
-    category = category.get_category(db, id=id)
-    if not category:
+    db_category = category.get_category(db, category_id=id)  # Changed this line
+    if not db_category:
         raise HTTPException(status_code=404, detail="Category not found")
-    return category.delete_category(db, id=id)
+    return category.delete_category(db, category_id=id)  # Changed this line

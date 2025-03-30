@@ -39,11 +39,15 @@ async def create_menu_item(
         }
         
         # Validate required fields
-        if not name or not price or not category_id:
-            raise HTTPException(status_code=400, detail="Missing required fields")
+        if not name.strip():
+            raise HTTPException(status_code=400, detail="Name is required and cannot be empty")
+        if price is None or price <= 0:
+            raise HTTPException(status_code=400, detail="Price must be a positive number")
+        if category_id is None or category_id <= 0:
+            raise HTTPException(status_code=400, detail="Category ID must be a positive integer")
 
         item_in = schemas.MenuItemCreate(**item_data)
-        return await crud.MenuItem.create_with_image(db, obj_in=item_in, image=image)
+        return await crud.create_with_image(db, obj_in=item_in, image=image)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 

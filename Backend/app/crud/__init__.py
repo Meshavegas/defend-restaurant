@@ -8,8 +8,16 @@ from app.crud.user import (
     is_active,
     is_superuser
 )
-from app.crud.reservation import reservation
-from app.crud.menu import MenuItem
-from app.crud.category import category
+from app.crud.reservation import reservation   # Changed this line
+from .category import CRUDCategory
 from app.crud.order import order, order_item
 from app.crud.delivery import delivery
+from app.crud.menu import (remove, create_with_image, get_by_category, get_available, search_by_name)
+
+# Initialize CRUD instances
+category = CRUDCategory()  # Added this line
+
+__all__ = [
+    "category",
+    
+]

@@ -8,12 +8,7 @@ from app.schemas.menu import MenuItemCreate, MenuItemUpdate, CategoryCreate, Cat
 from app.crud.base import CRUDBase
 from app.core.minio_client import MinioClient
 
-class CRUDMenuItem(CRUDBase[MenuItem, MenuItemCreate, MenuItemUpdate]):
-    def __init__(self, model: Type[MenuItem]):
-        super().__init__(model)
-        self.minio_client = MinioClient()
-
-    def get_by_category(
+def get_by_category(
         self, db: session, *, category_id: int, skip: int = 0, limit: int = 100
     ) -> List[MenuItem]:
         return (
@@ -23,8 +18,7 @@ class CRUDMenuItem(CRUDBase[MenuItem, MenuItemCreate, MenuItemUpdate]):
             .limit(limit)
             .all()
         )
-    
-    def get_available(
+def get_available(
         self, db: session, *, skip: int = 0, limit: int = 100
     ) -> List[MenuItem]:
         return (
@@ -34,8 +28,8 @@ class CRUDMenuItem(CRUDBase[MenuItem, MenuItemCreate, MenuItemUpdate]):
             .limit(limit)
             .all()
         )
-    
-    def search_by_name(
+
+def search_by_name(
         self, db: session, *, name: str, skip: int = 0, limit: int = 100
     ) -> List[MenuItem]:
         return (
@@ -45,14 +39,48 @@ class CRUDMenuItem(CRUDBase[MenuItem, MenuItemCreate, MenuItemUpdate]):
             .limit(limit)
             .all()
         )
+async def update_with_image(
+        self,
+        db: session,
+        *,
+        db_obj: MenuItem,
+        obj_in: MenuItemUpdate,
+        image: Optional[UploadFile] = None
+    ) -> MenuItem:
+        update_data = obj_in.dict(exclude_unset=True)
+        
+        if image:
+            # Delete old image if exists
+            if db_obj.image_url and os.path.exists(db_obj.image_url):
+                os.remove(db_obj.image_url)
+            
+            # Save new image
+            image_path = f"static/menu_items/{db_obj.id}_{image.filename}"
+            os.makedirs(os.path.dirname(image_path), exist_ok=True)
+            
+            with open(image_path, "wb") as buffer:
+                shutil.copyfileobj(image.file, buffer)
+            
+            update_data["image_url"] = image_path
 
-    async def create_with_image(
-        self, 
+        for field, value in update_data.items():
+            setattr(db_obj, field, value)
+
+        db.add(db_obj)
+        db.commit()
+        db.refresh(db_obj)
+        return db_obj
+    
+async def create_with_image(
+      
         db: session, 
         *, 
         obj_in: MenuItemCreate, 
         image: Optional[UploadFile] = None
     ) -> MenuItem:
+        
+        minio_client = MinioClient()
+
         try:
             # Ensure obj_in is properly converted to dict
             if isinstance(obj_in, str):
@@ -81,12 +109,19 @@ class CRUDMenuItem(CRUDBase[MenuItem, MenuItemCreate, MenuItemUpdate]):
                 object_name = f"{uuid.uuid4()}.{file_ext}"
                 
                 # Upload to MinIO and get URL
-                image_url = await self.minio_client.upload_file(image, object_name)
-                obj_in_data["image_url"] = image_url
-                obj_in_data["image_object_name"] = object_name
+                try:
+                    image_url = await minio_client.upload_file(image, object_name)
+                    obj_in_data["image_url"] = image_url
+                    obj_in_data["image_object_name"] = object_name
+                    print(f"Image uploaded: {image_url}")
+                except Exception as minio_error:
+                    raise HTTPException(
+                        status_code=500,
+                        detail=f"Failed to upload image: {str(minio_error)}"
+                    )
 
             # Create database object
-            db_obj = self.model(**obj_in_data)
+            db_obj = MenuItem(**obj_in_data)
             db.add(db_obj)
             db.commit()
             db.refresh(db_obj)
@@ -95,42 +130,9 @@ class CRUDMenuItem(CRUDBase[MenuItem, MenuItemCreate, MenuItemUpdate]):
         except Exception as e:
             db.rollback()
             raise ValueError(f"Error creating menu item: {str(e)}")
-
-    async def update_with_image(
-        self,
-        db: session,
-        *,
-        db_obj: MenuItem,
-        obj_in: Union[MenuItemUpdate, Dict[str, Any]],
-        image: Optional[UploadFile] = None
-    ) -> MenuItem:
-        obj_data = db_obj.__dict__
-        if isinstance(obj_in, dict):
-            update_data = obj_in
-        else:
-            update_data = obj_in.dict(exclude_unset=True)
-
-        if image:
-            # Delete old image if exists
-            if db_obj.image_object_name:
-                self.minio_client.delete_file(db_obj.image_object_name)
-
-            # Upload new image
-            file_ext = image.filename.split('.')[-1]
-            object_name = f"{uuid.uuid4()}.{file_ext}"
-            image_url = await self.minio_client.upload_file(image, object_name)
-            
-            update_data["image_url"] = image_url
-            update_data["image_object_name"] = object_name
-
-        return super().update(db, db_obj=db_obj, obj_in=update_data)
-
-    def remove(self, db: session, *, id: int) -> MenuItem:
+        
+def remove(self, db: session, *, id: int) -> MenuItem:
         obj = db.query(self.model).get(id)
         if obj.image_object_name:
             self.minio_client.delete_file(obj.image_object_name)
         return super().remove(db, id=id)
-
-class CRUDCategory(CRUDBase[Category, CategoryCreate, CategoryUpdate]):
-    def get_by_name(self, db: session, *, name: str) -> Optional[Category]:
-        return db.query(Category).filter(Category.name == name).first()

@@ -31,9 +31,9 @@ class MenuItemBase(BaseModel):
     description: Optional[str] = None
     price: float = Field(..., gt=0)
     is_available: bool = True
-    category_id: int
+    category_id: Optional[int] = None
     preparation_time: Optional[int] = None
-    image_url: Optional[str] = None
+    image_url: Optional[str] = None 
 
 class MenuItemCreate(MenuItemBase):
     pass
