@@ -3,12 +3,12 @@ import React from "react";
 
 type Props = {
   children: React.ReactNode;
-  style: ViewStyle;
+  style?: ViewStyle;
 };
 
 const PageView = ({ children, style }: Props) => {
   return (
-    <View style={style}>
+    <View style={[style, { flex: 1 }]}>
       {children}
       <View
         style={{

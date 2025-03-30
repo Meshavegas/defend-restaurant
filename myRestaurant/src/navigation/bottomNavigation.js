@@ -7,20 +7,27 @@ import ReservationScreen from "../Screens/app/ReservationScreen";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import { View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import useAuthStore from "../store/auth";
+import ProfileScreen from "../Screens/app/profilScreen";
+import { useAppContext } from "../context/themeContext";
 
 const Tab = createBottomTabNavigator();
 
 const BottomNavigation = () => {
+  const { users } = useAuthStore();
+  const { colors, isDarkMode } = useAppContext();
+
   return (
     <View style={{ flex: 1, backgroundColor: "transparent" }}>
       <Tab.Navigator
         screenOptions={{
+          tabBarHideOnKeyboard: true,
           headerShown: false,
-          tabBarActiveTintColor: "yellow",
-          tabBarInactiveTintColor: "gray",
+          tabBarActiveTintColor: colors.active, // Use theme color
+          tabBarInactiveTintColor: colors.inactive, // Use theme color
 
           tabBarStyle: {
-            backgroundColor: "#222",
+            backgroundColor: colors.overlay, // Use theme color
             flex: 1,
             width: "100%",
             height: 70,
@@ -35,7 +42,7 @@ const BottomNavigation = () => {
           name="Home"
           component={HomeScreen}
           options={{
-            tabBarLabel: "Acceuil",
+            tabBarLabel: "Home",
             tabBarIcon: ({ color, size }) => (
               <MaterialCommunityIcons name="home" color={color} size={size} />
             ),
@@ -61,14 +68,31 @@ const BottomNavigation = () => {
             ),
           }}
         />
+
+        {users?.role === "admin" ? (
+          <Tab.Screen
+            name="Admin"
+            component={AdminDashboard}
+            options={{
+              tabBarLabel: "Admin",
+              tabBarIcon: ({ color, size }) => (
+                <MaterialCommunityIcons
+                  name="account-cog"
+                  color={color}
+                  size={size}
+                />
+              ),
+            }}
+          />
+        ) : null}
         <Tab.Screen
-          name="AdminDashboard"
-          component={AdminDashboard}
+          name="profil"
+          component={ProfileScreen}
           options={{
-            tabBarLabel: "Admin",
+            tabBarLabel: "Profil",
             tabBarIcon: ({ color, size }) => (
               <MaterialCommunityIcons
-                name="account-cog"
+                name="account"
                 color={color}
                 size={size}
               />

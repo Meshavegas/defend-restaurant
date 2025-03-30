@@ -39,7 +39,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    // storage.set("theme", isDarkMode ? "dark" : "light");
+    storage.set("theme", isDarkMode ? "dark" : "light");
   }, [isDarkMode]);
 
   const value = {
