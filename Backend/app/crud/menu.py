@@ -136,3 +136,37 @@ def remove(self, db: session, *, id: int) -> MenuItem:
         if obj.image_object_name:
             self.minio_client.delete_file(obj.image_object_name)
         return super().remove(db, id=id)
+
+# get all items group by category like list of category and inside category list of menu item
+
+def get_items_by_categories(db: session) -> List[Dict[str, Any]]:
+    # Get all categories with their menu items
+    categories = (
+        db.query(Category)
+        .outerjoin(MenuItem)
+        .all()
+    )
+
+    # Format the result
+    result = []
+    for category in categories:
+        category_data = {
+            "id": category.id,
+            "name": category.name,
+            "description": category.description,
+            "menu_items": [
+                {
+                    "id": item.id,
+                    "name": item.name,
+                    "description": item.description,
+                    "price": item.price,
+                    "is_available": item.is_available,
+                    "image_url": item.image_url,
+                    "preparation_time": item.preparation_time
+                }
+                for item in category.menu_items
+            ]
+        }
+        result.append(category_data)
+
+    return result

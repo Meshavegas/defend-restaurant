@@ -13,13 +13,14 @@ import { useAppContext } from "../context/themeContext";
 const Stack = createNativeStackNavigator();
 
 const RootNavigation = () => {
-  const { token, getMe } = useAuthStore();
+  const { token, getMe, getMenuItems } = useAuthStore();
   const { isDarkMode, colors } = useAppContext();
   useEffect(() => {
     console.log("Token from store", token);
 
     if (token) {
       getMe();
+      getMenuItems();
     }
   }, [token]);
 

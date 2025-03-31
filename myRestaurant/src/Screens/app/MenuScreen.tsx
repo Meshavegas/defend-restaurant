@@ -17,7 +17,6 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
-import { menuItems } from "../../const/menu";
 import { useAppContext } from "../../context/themeContext";
 import PageView from "../../components/pageContainer";
 import useAuthStore from "../../store/auth";
@@ -29,7 +28,7 @@ const MenuScreen = () => {
   const { colors, isDarkMode } = useAppContext();
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
-  const { addToBasket, basket, totalItems } = useAuthStore();
+  const { addToBasket, basket, totalItems, menuItems } = useAuthStore();
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
@@ -61,26 +60,6 @@ const MenuScreen = () => {
     )
     .toFixed(2);
 
-  // Filter menu items based on search and category
-  const filteredMenu = menuItems.filter((item) => {
-    const matchesSearch = item.name
-      .toLowerCase()
-      .includes(search.toLowerCase());
-    const matchesCategory =
-      activeCategory === "All" || item.category === activeCategory;
-    return matchesSearch && matchesCategory;
-  });
-
-  // Group items by category
-  const categories = [
-    "All",
-    "Breakfast",
-    "Lunch",
-    "Dinner",
-    "Dessert",
-    "Snacks",
-  ];
-
   useEffect(() => {
     Animated.sequence([
       Animated.timing(basketBounce, {
@@ -96,13 +75,7 @@ const MenuScreen = () => {
     ]).start();
   }, [basket]);
 
-  const renderMenuCategory = (category) => {
-    const categoryItems = filteredMenu.filter(
-      (item) => category === "All" || item.category === category
-    );
-
-    if (categoryItems.length === 0) return null;
-
+  const renderMenuCategory = (category: ICategory) => {
     return (
       <Animated.View
         style={[
@@ -114,24 +87,34 @@ const MenuScreen = () => {
         ]}
       >
         <Text style={[styles.categoryTitle, { color: colors.primary }]}>
-          {category === "All" ? "All Items" : category}
+          {category.name}
         </Text>
         <FlatList
-          data={categoryItems}
+          data={category.menu_items}
           keyExtractor={(item) => item.id.toString()}
-          horizontal
+          horizontal={activeCategory === "All"}
           showsHorizontalScrollIndicator={false}
           renderItem={({ item }) => (
             <TouchableOpacity
-              style={[styles.menuItem, { backgroundColor: colors.surface }]}
+              style={[
+                styles.menuItem,
+                {
+                  backgroundColor: colors.surface,
+                  width: activeCategory === "All" ? width * 0.7 : width * 0.89,
+                },
+              ]}
               onPress={() => addToBasket(item)}
               activeOpacity={0.7}
             >
-              <Image source={item.image} style={styles.menuImage} />
+              <Image
+                source={{ uri: item.image_url }}
+                style={styles.menuImage}
+              />
               <View style={styles.menuItemContent}>
                 <Text style={[styles.menuText, { color: colors.text }]}>
                   {item.name}
                 </Text>
+
                 <Text
                   style={[
                     styles.menuDescription,
@@ -144,8 +127,32 @@ const MenuScreen = () => {
                 </Text>
                 <View style={styles.menuItemFooter}>
                   <Text style={[styles.priceText, { color: colors.primary }]}>
-                    {item.price}
+                    {Intl.NumberFormat("en-US", {
+                      style: "currency",
+                      currency: "XAF",
+                      minimumFractionDigits: 2,
+                    }).format(Number(item.price))}
                   </Text>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Ionicons
+                      name="time-outline"
+                      size={16}
+                      color={colors.textSecondary}
+                    />
+                    <Text
+                      style={[
+                        // styles.menuDescription,
+                        { color: colors.textSecondary, marginLeft: 5 },
+                      ]}
+                    >
+                      {`${item.preparation_time} min`}
+                    </Text>
+                  </View>
                   <TouchableOpacity
                     style={[
                       styles.addButton,
@@ -204,34 +211,57 @@ const MenuScreen = () => {
           style={styles.categoriesScroll}
           contentContainerStyle={styles.categoriesContainer}
         >
-          {categories.map((category) => (
+          <TouchableOpacity
+            style={[
+              styles.categoryButton,
+              {
+                backgroundColor:
+                  activeCategory === "All" ? colors.primary : colors.surface,
+                height: 40,
+              },
+            ]}
+            onPress={() => setActiveCategory("All")}
+          >
+            <Text
+              style={[
+                {
+                  color:
+                    activeCategory === "All" ? colors.background : colors.text,
+                  fontWeight: activeCategory === "All" ? "bold" : "normal",
+                },
+              ]}
+            >
+              All
+            </Text>
+          </TouchableOpacity>
+          {menuItems.map((category) => (
             <TouchableOpacity
-              key={category}
+              key={category.id}
               style={[
                 styles.categoryButton,
                 {
                   backgroundColor:
-                    activeCategory === category
+                    activeCategory === category.id
                       ? colors.primary
                       : colors.surface,
                   height: 40,
                 },
               ]}
-              onPress={() => setActiveCategory(category)}
+              onPress={() => setActiveCategory(category.id)}
             >
               <Text
                 style={[
-                  // styles.categoryButtonText,
                   {
                     color:
-                      activeCategory === category
+                      activeCategory === category.id
                         ? colors.background
                         : colors.text,
-                    fontWeight: activeCategory === category ? "bold" : "normal",
+                    fontWeight:
+                      activeCategory === category.id ? "bold" : "normal",
                   },
                 ]}
               >
-                {category}
+                {category.name}
               </Text>
             </TouchableOpacity>
           ))}
@@ -241,13 +271,14 @@ const MenuScreen = () => {
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContainer}
+          horizontal={false}
         >
           {/* If filtering by category, only show that category */}
           {activeCategory === "All"
-            ? categories
-                .slice(1)
-                .map((category) => renderMenuCategory(category))
-            : renderMenuCategory(activeCategory)}
+            ? menuItems.slice(1).map((category) => renderMenuCategory(category))
+            : renderMenuCategory(
+                menuItems.find((category) => category.id === activeCategory)
+              )}
         </ScrollView>
 
         {/* Basket Button */}
@@ -284,7 +315,11 @@ const MenuScreen = () => {
                   <Text
                     style={[styles.basketTotal, { color: colors.background }]}
                   >
-                    ${totalPrice}
+                    {new Intl.NumberFormat("en-US", {
+                      style: "currency",
+                      currency: "XAF",
+                      minimumFractionDigits: 2,
+                    }).format(totalPrice)}
                   </Text>
                 </View>
               </LinearGradient>
@@ -366,7 +401,6 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   menuItem: {
-    width: width * 0.7,
     borderRadius: 16,
     marginRight: 15,
     marginBottom: 5,

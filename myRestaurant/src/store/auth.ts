@@ -3,6 +3,7 @@ import { create, StateCreator } from "zustand";
 import { persist, PersistOptions } from "zustand/middleware";
 import { storage } from "../const/storage";
 import authService from "../service/authService";
+import menuService from "../service/menuService";
 
 // import {apiClient} from '@src/apiHelper/axiosHelper';
 // import {changeLang} from '@src/constants/lang/i18n';
@@ -16,6 +17,7 @@ interface AuthState {
   users?: IUser;
   token?: string | null;
   basket: any[];
+  menuItems: ICategory[];
   // Actions
   login: (username: string, password: string) => Promise<void>;
   register: (user: IUserRegister) => Promise<void>;
@@ -26,6 +28,7 @@ interface AuthState {
   addToBasket: (item: any) => void;
   removeFromBasket: (item: any) => void;
   totalItems: () => number;
+  getMenuItems: () => Promise<void>;
 }
 
 type AuthPersist = (
@@ -49,6 +52,7 @@ const useAuthStore = create<AuthState>(
       users: null,
       _hasHydrated: false,
       basket: [],
+      menuItems: [],
       login: async (username: string, password: string) => {
         try {
           const response = await authService.authenticate(username, password);
@@ -103,6 +107,14 @@ const useAuthStore = create<AuthState>(
             (basketItem) => basketItem.id !== item.id
           ),
         }));
+      },
+      getMenuItems: async () => {
+        try {
+          const response = await menuService.getMenuItemsByCategory();
+          set({ menuItems: response });
+        } catch (error) {
+          console.error("An error occurred during menu fetch:", error);
+        }
       },
       setHasHydrated: (state: boolean) => set({ _hasHydrated: state }),
     }),

@@ -27,3 +27,19 @@ interface IUserRegister {
   phone_number: string;
   address: string;
 }
+
+interface ICategory {
+  id: string;
+  name: string;
+  description: string;
+  menu_items: IMenuItem[];
+}
+interface IMenuItem {
+  id: string;
+  name: string;
+  description: string;
+  price: string;
+  image_url: string;
+  is_available: boolean;
+  preparation_time: string;
+}
