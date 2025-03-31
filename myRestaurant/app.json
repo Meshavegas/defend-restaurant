@@ -20,7 +20,10 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#D89610"
       },
-      "package": "com.meshavegas.myRestaurant"
+      "package": "com.meshavegas.myRestaurant",
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -32,6 +35,11 @@
           "photosPermission": "The app accesses your photos to let you share them with your friends."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "116265ef-9224-4319-9960-7154c2f1f9ef"
+      }
+    }
   }
 }
