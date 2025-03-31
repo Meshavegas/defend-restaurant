@@ -7,7 +7,7 @@ from app.api import deps
 
 router = APIRouter()
 
-@router.post("/categories/", response_model=schemas.Category)
+@router.post("/", response_model=schemas.Category)
 async def create_category(
     name: str = Form(..., description="Required"),
     description: Optional[str] = Form(None),
@@ -27,7 +27,7 @@ async def create_category(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.get("/categories/", response_model=List[schemas.Category])
+@router.get("/", response_model=List[schemas.Category])
 def get_categories(
     db: Session = Depends(deps.get_db),
     skip: int = 0,

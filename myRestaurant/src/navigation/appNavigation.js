@@ -12,6 +12,7 @@ import ManageUsers from "../Screens/app/ManageUsers";
 import TableReservations from "../Screens/app/TableReservations";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import BottomNavigation from "./bottomNavigation";
+import ManageMenu from "../Screens/app/ManageMenu";
 
 const Stack = createNativeStackNavigator();
 
@@ -29,6 +30,7 @@ const AppNavigation = () => {
       <Stack.Screen name="ManageOrders" component={ManageOrders} />
       <Stack.Screen name="ManageUsers" component={ManageUsers} />
       <Stack.Screen name="TableReservations" component={TableReservations} />
+      <Stack.Screen name="ManageMenu" component={ManageMenu} />
     </Stack.Navigator>
   );
 };

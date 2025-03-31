@@ -102,9 +102,14 @@ def delete_menu_item(
         raise HTTPException(status_code=404, detail="Menu item not found")
     return crud.menu_item.remove(db, id=id)
 
-@router.get("/menu-items/categories", response_model=List)
+@router.get("/by/categories", response_model=List)
 def get_menu_items_categories(
     *,
     db: Session = Depends(deps.get_db),
 ):
     return crud.get_items_by_categories(db=db)
+
+
+@router.get("/categories", response_model=List)
+def get_menu_items_categories( *,db: Session = Depends(deps.get_db)):
+    return crud.get_items_and_categories(db=db)

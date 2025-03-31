@@ -43,3 +43,24 @@ interface IMenuItem {
   is_available: boolean;
   preparation_time: string;
 }
+
+interface IMenuItemAndCategory {
+  id: string;
+  name: string;
+  description: string;
+  price: string;
+  is_available: boolean;
+  image_url: string;
+  preparation_time: string;
+  category: {
+    id: string;
+    name: string;
+    description: string;
+  };
+}
+
+interface ICategoryItem {
+  id: string;
+  name: string;
+  description: string;
+}

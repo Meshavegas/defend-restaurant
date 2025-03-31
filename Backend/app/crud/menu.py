@@ -170,3 +170,26 @@ def get_items_by_categories(db: session) -> List[Dict[str, Any]]:
         result.append(category_data)
 
     return result
+
+def get_items_and_categories(db: session):
+    """Get all menu items with their category details"""
+    results = db.query(MenuItem, Category).join(Category).all()
+    return [
+        {
+             
+                "id": menu_item.id,
+                "name": menu_item.name,
+                "description": menu_item.description,
+                "price": menu_item.price,
+                "is_available": menu_item.is_available,
+                "image_url": menu_item.image_url,
+                "preparation_time": menu_item.preparation_time,
+             
+            "category": {
+                "id": category.id,
+                "name": category.name,
+                "description": category.description,
+            },
+        }
+        for menu_item, category in results
+    ]

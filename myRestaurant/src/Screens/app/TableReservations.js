@@ -1,244 +1,984 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, Alert, ScrollView } from "react-native";
+"use client";
+
+import { useState, useEffect, useRef } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  FlatList,
+  StatusBar,
+  Animated,
+  Dimensions,
+  TextInput,
+  Modal,
+  Alert,
+  ScrollView, // Added ScrollView import
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
-import { Picker } from "@react-native-picker/picker";
+import { useAppContext } from "../../context/themeContext";
+import PageView from "../../components/pageContainer";
+
+const { width } = Dimensions.get("window");
+
+// Mock data for reservations
+const initialReservations = [
+  {
+    id: "1",
+    name: "John Doe",
+    date: "2025-04-05",
+    time: "19:30",
+    guests: 4,
+    status: "confirmed",
+    notes: "Window seat preferred",
+    phone: "6123456789",
+  },
+  {
+    id: "2",
+    name: "Alice Smith",
+    date: "2025-04-05",
+    time: "20:00",
+    guests: 2,
+    status: "pending",
+    notes: "Anniversary celebration",
+    phone: "6987654321",
+  },
+  {
+    id: "3",
+    name: "Robert Johnson",
+    date: "2025-04-06",
+    time: "18:15",
+    guests: 6,
+    status: "confirmed",
+    notes: "Allergic to nuts",
+    phone: "6555123456",
+  },
+];
 
 const TableReservations = () => {
   const navigation = useNavigation();
+  const { colors, isDarkMode } = useAppContext();
 
-  const [reservations, setReservations] = useState([
-    { id: "1", customerName: "John Doe", date: "2025-03-20", time: "7:00 PM", period: "Evening", status: "Pending" },
-    { id: "2", customerName: "Jane Smith", date: "2025-03-21", time: "6:30 PM", period: "Evening", status: "Approved" },
-    { id: "3", customerName: "Sam Wilson", date: "2025-03-22", time: "8:00 PM", period: "Night", status: "Pending" },
-  ]);
+  // State
+  const [reservations, setReservations] = useState(initialReservations);
+  const [filteredReservations, setFilteredReservations] =
+    useState(initialReservations);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeFilter, setActiveFilter] = useState("all");
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const [selectedReservation, setSelectedReservation] = useState(null);
 
-  const [newReservation, setNewReservation] = useState({
-    customerName: "",
-    date: "",
-    time: "",
-    period: "Morning", // Default period
-  });
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
 
-  const handleAddReservation = () => {
-    if (!newReservation.customerName || !newReservation.date || !newReservation.time) {
-      Alert.alert("Error", "Please fill in all fields before adding a reservation.");
-      return;
+  // Start animation when component mounts
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
+  // Filter reservations based on search query and active filter
+  useEffect(() => {
+    let result = reservations;
+
+    // Apply search filter
+    if (searchQuery) {
+      result = result.filter(
+        (item) =>
+          item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.phone.includes(searchQuery)
+      );
     }
-    setReservations((prevReservations) => [
-      ...prevReservations,
-      { id: Math.random().toString(), ...newReservation, status: "Pending" },
-    ]);
-    setNewReservation({ customerName: "", date: "", time: "", period: "Morning" });
+
+    // Apply status filter
+    if (activeFilter !== "all") {
+      result = result.filter((item) => item.status === activeFilter);
+    }
+
+    setFilteredReservations(result);
+  }, [searchQuery, activeFilter, reservations]);
+
+  const handleViewDetails = (reservation) => {
+    setSelectedReservation(reservation);
+    setDetailModalVisible(true);
   };
 
-  const handleChangeStatus = (reservationId, newStatus) => {
-    setReservations((prevReservations) =>
-      prevReservations.map((reservation) =>
-        reservation.id === reservationId ? { ...reservation, status: newStatus } : reservation
+  const handleUpdateStatus = (id, newStatus) => {
+    setReservations(
+      reservations.map((item) =>
+        item.id === id ? { ...item, status: newStatus } : item
       )
     );
+
+    if (selectedReservation && selectedReservation.id === id) {
+      setSelectedReservation({ ...selectedReservation, status: newStatus });
+    }
   };
 
-  const handleChangePeriod = (reservationId, newPeriod) => {
-    setReservations((prevReservations) =>
-      prevReservations.map((reservation) =>
-        reservation.id === reservationId ? { ...reservation, period: newPeriod } : reservation
-      )
-    );
-  };
-
-  const handleRemoveReservation = (reservationId) => {
+  const handleDeleteReservation = (id) => {
     Alert.alert(
-      "Remove Reservation",
-      "Are you sure you want to remove this reservation?",
+      "Delete Reservation",
+      "Are you sure you want to delete this reservation?",
       [
         { text: "Cancel", style: "cancel" },
-        { text: "OK", onPress: () => removeReservation(reservationId) },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            setReservations(reservations.filter((item) => item.id !== id));
+            setDetailModalVisible(false);
+          },
+        },
       ]
     );
   };
 
-  const removeReservation = (reservationId) => {
-    setReservations((prevReservations) => prevReservations.filter((reservation) => reservation.id !== reservationId));
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "confirmed":
+        return colors.success;
+      case "pending":
+        return colors.warning;
+      case "cancelled":
+        return colors.error;
+      default:
+        return colors.textSecondary;
+    }
   };
 
   const renderReservationItem = ({ item }) => (
-    <View style={styles.reservationItem}>
-      <View style={styles.reservationDetails}>
-        <Text style={styles.reservationText}>
-          {item.customerName} - {item.date} at {item.time}
-        </Text>
-        <Text style={styles.reservationText}>Period: {item.period}</Text>
-      </View>
-
-      {/* Period Picker */}
-      <Picker
-        selectedValue={item.period}
-        style={styles.picker}
-        onValueChange={(itemValue) => handleChangePeriod(item.id, itemValue)}
+    <Animated.View
+      style={[
+        styles.reservationItem,
+        {
+          backgroundColor: colors.surface,
+          opacity: fadeAnim,
+        },
+      ]}
+    >
+      <TouchableOpacity
+        style={styles.reservationContent}
+        onPress={() => handleViewDetails(item)}
       >
-        <Picker.Item label="Morning" value="Morning" />
-        <Picker.Item label="Afternoon" value="Afternoon" />
-        <Picker.Item label="Evening" value="Evening" />
-        <Picker.Item label="Night" value="Night" />
-      </Picker>
+        <View style={styles.reservationHeader}>
+          <Text style={[styles.reservationName, { color: colors.text }]}>
+            {item.name}
+          </Text>
+          <View
+            style={[
+              styles.statusBadge,
+              { backgroundColor: `${getStatusColor(item.status)}20` },
+            ]}
+          >
+            <Text
+              style={[
+                styles.statusText,
+                { color: getStatusColor(item.status) },
+              ]}
+            >
+              {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+            </Text>
+          </View>
+        </View>
 
-      {/* Status Picker */}
-      <Picker
-        selectedValue={item.status}
-        style={styles.picker}
-        onValueChange={(itemValue) => handleChangeStatus(item.id, itemValue)}
-      >
-        <Picker.Item label="Pending" value="Pending" />
-        <Picker.Item label="Approved" value="Approved" />
-        <Picker.Item label="Cancelled" value="Cancelled" />
-      </Picker>
+        <View style={styles.reservationDetails}>
+          <View style={styles.detailItem}>
+            <Ionicons
+              name="calendar-outline"
+              size={16}
+              color={colors.primary}
+            />
+            <Text style={[styles.detailText, { color: colors.textSecondary }]}>
+              {item.date}
+            </Text>
+          </View>
 
-      {/* Remove Button */}
-      <TouchableOpacity style={styles.removeButton} onPress={() => handleRemoveReservation(item.id)}>
-        <Text style={styles.removeButtonText}>Remove</Text>
+          <View style={styles.detailItem}>
+            <Ionicons name="time-outline" size={16} color={colors.primary} />
+            <Text style={[styles.detailText, { color: colors.textSecondary }]}>
+              {item.time}
+            </Text>
+          </View>
+
+          <View style={styles.detailItem}>
+            <Ionicons name="people-outline" size={16} color={colors.primary} />
+            <Text style={[styles.detailText, { color: colors.textSecondary }]}>
+              {item.guests} {item.guests === 1 ? "guest" : "guests"}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.reservationActions}>
+          <TouchableOpacity
+            style={[
+              styles.actionButton,
+              { backgroundColor: `${colors.primary}20` },
+            ]}
+            onPress={() => handleViewDetails(item)}
+          >
+            <Text style={[styles.actionButtonText, { color: colors.primary }]}>
+              View Details
+            </Text>
+          </TouchableOpacity>
+        </View>
       </TouchableOpacity>
-    </View>
+    </Animated.View>
   );
 
   return (
-    <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-      <View style={styles.container}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back-outline" color="white" size={30} />
-        </TouchableOpacity>
+    <PageView>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
 
-        <Text style={styles.header}>Table Reservations</Text>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={[styles.backButton, { backgroundColor: colors.surface }]}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="arrow-back-outline" color={colors.text} size={24} />
+          </TouchableOpacity>
 
-        <Text style={styles.infoText}>Manage customer table reservations here.</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>
+            Table Reservations
+          </Text>
 
-        {/* Add new reservation */}
-        <TextInput
-          style={styles.input}
-          placeholder="Customer Name"
-          value={newReservation.customerName}
-          onChangeText={(text) => setNewReservation({ ...newReservation, customerName: text })}
-          placeholderTextColor="white"
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Date (YYYY-MM-DD)"
-          value={newReservation.date}
-          onChangeText={(text) => setNewReservation({ ...newReservation, date: text })}
-          placeholderTextColor="white"
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Time (HH:MM AM/PM)"
-          value={newReservation.time}
-          onChangeText={(text) => setNewReservation({ ...newReservation, time: text })}
-          placeholderTextColor="white"
-        />
-
-        {/* Period Picker */}
-        <Picker
-          selectedValue={newReservation.period}
-          style={styles.picker}
-          onValueChange={(itemValue) => setNewReservation({ ...newReservation, period: itemValue })}
-        >
-          <Picker.Item label="Morning" value="Morning" />
-          <Picker.Item label="Afternoon" value="Afternoon" />
-          <Picker.Item label="Evening" value="Evening" />
-          <Picker.Item label="Night" value="Night" />
-        </Picker>
-
-        <TouchableOpacity style={styles.addButton} onPress={handleAddReservation}>
-          <Text style={styles.addButtonText}>Add Reservation</Text>
-        </TouchableOpacity>
-
-        {/* Reservation List */}
-        <View style={styles.reservationListContainer}>
-          <FlatList
-            data={reservations}
-            renderItem={renderReservationItem}
-            keyExtractor={(item) => item.id}
-          />
+          <View style={{ width: 40 }} />
         </View>
+
+        {/* Search Bar */}
+        <View
+          style={[styles.searchContainer, { backgroundColor: colors.surface }]}
+        >
+          <Ionicons
+            name="search"
+            size={20}
+            color={colors.textSecondary}
+            style={styles.searchIcon}
+          />
+          <TextInput
+            style={[styles.searchInput, { color: colors.text }]}
+            placeholder="Search by name or phone..."
+            placeholderTextColor={colors.textSecondary}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery("")}>
+              <Ionicons
+                name="close-circle"
+                size={20}
+                color={colors.textSecondary}
+              />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Filter Tabs */}
+        <View style={styles.filterContainer}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <TouchableOpacity
+              style={[
+                styles.filterTab,
+                activeFilter === "all" && [
+                  styles.activeFilterTab,
+                  { borderColor: colors.primary },
+                ],
+              ]}
+              onPress={() => setActiveFilter("all")}
+            >
+              <Text
+                style={[
+                  styles.filterText,
+                  {
+                    color:
+                      activeFilter === "all"
+                        ? colors.primary
+                        : colors.textSecondary,
+                  },
+                ]}
+              >
+                All
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.filterTab,
+                activeFilter === "confirmed" && [
+                  styles.activeFilterTab,
+                  { borderColor: colors.success },
+                ],
+              ]}
+              onPress={() => setActiveFilter("confirmed")}
+            >
+              <Text
+                style={[
+                  styles.filterText,
+                  {
+                    color:
+                      activeFilter === "confirmed"
+                        ? colors.success
+                        : colors.textSecondary,
+                  },
+                ]}
+              >
+                Confirmed
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.filterTab,
+                activeFilter === "pending" && [
+                  styles.activeFilterTab,
+                  { borderColor: colors.warning },
+                ],
+              ]}
+              onPress={() => setActiveFilter("pending")}
+            >
+              <Text
+                style={[
+                  styles.filterText,
+                  {
+                    color:
+                      activeFilter === "pending"
+                        ? colors.warning
+                        : colors.textSecondary,
+                  },
+                ]}
+              >
+                Pending
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.filterTab,
+                activeFilter === "cancelled" && [
+                  styles.activeFilterTab,
+                  { borderColor: colors.error },
+                ],
+              ]}
+              onPress={() => setActiveFilter("cancelled")}
+            >
+              <Text
+                style={[
+                  styles.filterText,
+                  {
+                    color:
+                      activeFilter === "cancelled"
+                        ? colors.error
+                        : colors.textSecondary,
+                  },
+                ]}
+              >
+                Cancelled
+              </Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+
+        {/* Reservations List */}
+        <FlatList
+          data={filteredReservations}
+          renderItem={renderReservationItem}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Ionicons
+                name="calendar-outline"
+                size={50}
+                color={colors.textSecondary}
+              />
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                No reservations found
+              </Text>
+            </View>
+          }
+        />
+
+        {/* Reservation Detail Modal */}
+        <Modal
+          visible={detailModalVisible}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setDetailModalVisible(false)}
+        >
+          {selectedReservation && (
+            <View
+              style={[
+                styles.modalContainer,
+                { backgroundColor: colors.background },
+              ]}
+            >
+              <View
+                style={[
+                  styles.modalContent,
+                  { backgroundColor: colors.surface },
+                ]}
+              >
+                <View style={styles.modalHeader}>
+                  <Text style={[styles.modalTitle, { color: colors.text }]}>
+                    Reservation Details
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => setDetailModalVisible(false)}
+                  >
+                    <Ionicons
+                      name="close"
+                      size={24}
+                      color={colors.textSecondary}
+                    />
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.modalBody}>
+                  <View style={styles.detailSection}>
+                    <Text
+                      style={[
+                        styles.detailLabel,
+                        { color: colors.textSecondary },
+                      ]}
+                    >
+                      Customer
+                    </Text>
+                    <Text style={[styles.detailValue, { color: colors.text }]}>
+                      {selectedReservation.name}
+                    </Text>
+                  </View>
+
+                  <View style={styles.detailSection}>
+                    <Text
+                      style={[
+                        styles.detailLabel,
+                        { color: colors.textSecondary },
+                      ]}
+                    >
+                      Phone
+                    </Text>
+                    <Text style={[styles.detailValue, { color: colors.text }]}>
+                      {selectedReservation.phone}
+                    </Text>
+                  </View>
+
+                  <View style={styles.detailRow}>
+                    <View
+                      style={[
+                        styles.detailSection,
+                        { flex: 1, marginRight: 10 },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.detailLabel,
+                          { color: colors.textSecondary },
+                        ]}
+                      >
+                        Date
+                      </Text>
+                      <Text
+                        style={[styles.detailValue, { color: colors.text }]}
+                      >
+                        {selectedReservation.date}
+                      </Text>
+                    </View>
+
+                    <View style={[styles.detailSection, { flex: 1 }]}>
+                      <Text
+                        style={[
+                          styles.detailLabel,
+                          { color: colors.textSecondary },
+                        ]}
+                      >
+                        Time
+                      </Text>
+                      <Text
+                        style={[styles.detailValue, { color: colors.text }]}
+                      >
+                        {selectedReservation.time}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.detailSection}>
+                    <Text
+                      style={[
+                        styles.detailLabel,
+                        { color: colors.textSecondary },
+                      ]}
+                    >
+                      Number of Guests
+                    </Text>
+                    <Text style={[styles.detailValue, { color: colors.text }]}>
+                      {selectedReservation.guests}
+                    </Text>
+                  </View>
+
+                  <View style={styles.detailSection}>
+                    <Text
+                      style={[
+                        styles.detailLabel,
+                        { color: colors.textSecondary },
+                      ]}
+                    >
+                      Status
+                    </Text>
+                    <View
+                      style={[
+                        styles.statusBadge,
+                        {
+                          backgroundColor: `${getStatusColor(
+                            selectedReservation.status
+                          )}20`,
+                          alignSelf: "flex-start",
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.statusText,
+                          { color: getStatusColor(selectedReservation.status) },
+                        ]}
+                      >
+                        {selectedReservation.status.charAt(0).toUpperCase() +
+                          selectedReservation.status.slice(1)}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {selectedReservation.notes && (
+                    <View style={styles.detailSection}>
+                      <Text
+                        style={[
+                          styles.detailLabel,
+                          { color: colors.textSecondary },
+                        ]}
+                      >
+                        Notes
+                      </Text>
+                      <Text
+                        style={[styles.detailValue, { color: colors.text }]}
+                      >
+                        {selectedReservation.notes}
+                      </Text>
+                    </View>
+                  )}
+
+                  <View style={styles.statusActions}>
+                    <Text
+                      style={[
+                        styles.statusActionsTitle,
+                        { color: colors.text },
+                      ]}
+                    >
+                      Update Status
+                    </Text>
+                    <View style={styles.statusButtons}>
+                      <TouchableOpacity
+                        style={[
+                          styles.statusButton,
+                          {
+                            backgroundColor:
+                              selectedReservation.status === "confirmed"
+                                ? colors.success
+                                : `${colors.success}20`,
+                          },
+                        ]}
+                        onPress={() =>
+                          handleUpdateStatus(
+                            selectedReservation.id,
+                            "confirmed"
+                          )
+                        }
+                      >
+                        <Text
+                          style={[
+                            styles.statusButtonText,
+                            {
+                              color:
+                                selectedReservation.status === "confirmed"
+                                  ? colors.background
+                                  : colors.success,
+                            },
+                          ]}
+                        >
+                          Confirm
+                        </Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={[
+                          styles.statusButton,
+                          {
+                            backgroundColor:
+                              selectedReservation.status === "pending"
+                                ? colors.warning
+                                : `${colors.warning}20`,
+                          },
+                        ]}
+                        onPress={() =>
+                          handleUpdateStatus(selectedReservation.id, "pending")
+                        }
+                      >
+                        <Text
+                          style={[
+                            styles.statusButtonText,
+                            {
+                              color:
+                                selectedReservation.status === "pending"
+                                  ? colors.background
+                                  : colors.warning,
+                            },
+                          ]}
+                        >
+                          Pending
+                        </Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={[
+                          styles.statusButton,
+                          {
+                            backgroundColor:
+                              selectedReservation.status === "cancelled"
+                                ? colors.error
+                                : `${colors.error}20`,
+                          },
+                        ]}
+                        onPress={() =>
+                          handleUpdateStatus(
+                            selectedReservation.id,
+                            "cancelled"
+                          )
+                        }
+                      >
+                        <Text
+                          style={[
+                            styles.statusButtonText,
+                            {
+                              color:
+                                selectedReservation.status === "cancelled"
+                                  ? colors.background
+                                  : colors.error,
+                            },
+                          ]}
+                        >
+                          Cancel
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+
+                <View style={styles.modalFooter}>
+                  <TouchableOpacity
+                    style={[
+                      styles.deleteButton,
+                      { backgroundColor: `${colors.error}20` },
+                    ]}
+                    onPress={() =>
+                      handleDeleteReservation(selectedReservation.id)
+                    }
+                  >
+                    <Ionicons
+                      name="trash-outline"
+                      size={18}
+                      color={colors.error}
+                    />
+                    <Text
+                      style={[styles.deleteButtonText, { color: colors.error }]}
+                    >
+                      Delete Reservation
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.closeButton,
+                      { backgroundColor: colors.primary },
+                    ]}
+                    onPress={() => setDetailModalVisible(false)}
+                  >
+                    <Text
+                      style={[
+                        styles.closeButtonText,
+                        { color: colors.background },
+                      ]}
+                    >
+                      Close
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          )}
+        </Modal>
       </View>
-    </ScrollView>
+    </PageView>
   );
 };
 
 const styles = StyleSheet.create({
-  scrollContainer: {
-    flex: 1,
-    backgroundColor: "#1e1e1e",
-  },
   container: {
-    padding: 20,
-  },
-  backButton: {
-    position: "absolute",
-    top: 50,
-    left: 20,
+    flex: 1,
   },
   header: {
-    color: "yellow",
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 20,
-    marginTop: 80,
-  },
-  infoText: {
-    color: "white",
-    fontSize: 16,
-    textAlign: "center",
-    marginTop: 10,
-  },
-  input: {
-    backgroundColor: "#333",
-    color: "white",
-    padding: 10,
-    borderRadius: 8,
-    marginTop: 10,
-  },
-  picker: {
-    backgroundColor: "#333",
-    color: "white",
-    marginVertical: 10,
-    borderRadius: 8,
-  },
-  addButton: {
-    backgroundColor: "yellow",
-    paddingVertical: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 20,
-    borderRadius: 8,
-    marginTop: 20,
+    paddingTop: 10,
+    paddingBottom: 10,
   },
-  addButtonText: {
-    color: "black",
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginHorizontal: 20,
+    marginVertical: 10,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  searchIcon: {
+    marginRight: 10,
+  },
+  searchInput: {
+    flex: 1,
     fontSize: 16,
-    textAlign: "center",
   },
-  reservationListContainer: {
-    marginTop: 30,
+  filterContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 15,
+  },
+  filterTab: {
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    marginRight: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "transparent",
+  },
+  activeFilterTab: {
+    borderWidth: 1,
+  },
+  filterText: {
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  listContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 100,
   },
   reservationItem: {
-    backgroundColor: "#333",
+    borderRadius: 10,
+    marginBottom: 15,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  reservationContent: {
     padding: 15,
+  },
+  reservationHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 10,
-    borderRadius: 8,
   },
-  reservationText: {
-    color: "white",
+  reservationName: {
     fontSize: 16,
+    fontWeight: "bold",
   },
-  removeButton: {
-    backgroundColor: "yellow",
-    padding: 10,
-    borderRadius: 8,
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  reservationDetails: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginBottom: 10,
+  },
+  detailItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginRight: 15,
+    marginBottom: 5,
+  },
+  detailText: {
+    fontSize: 14,
+    marginLeft: 5,
+  },
+  reservationActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+  },
+  actionButton: {
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 5,
+  },
+  actionButtonText: {
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  emptyContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 50,
+  },
+  emptyText: {
+    fontSize: 16,
     marginTop: 10,
   },
-  removeButtonText: {
-    color: "black",
+  modalContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  modalContent: {
+    width: "100%",
+    borderRadius: 15,
+    overflow: "hidden",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  modalBody: {
+    padding: 15,
+  },
+  detailSection: {
+    marginBottom: 15,
+  },
+  detailRow: {
+    flexDirection: "row",
+  },
+  detailLabel: {
+    fontSize: 14,
+    marginBottom: 5,
+  },
+  detailValue: {
     fontSize: 16,
-    textAlign: "center",
+    fontWeight: "500",
+  },
+  statusActions: {
+    marginTop: 10,
+  },
+  statusActionsTitle: {
+    fontSize: 16,
+    fontWeight: "500",
+    marginBottom: 10,
+  },
+  statusButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  statusButton: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: "center",
+    borderRadius: 5,
+    marginHorizontal: 5,
+  },
+  statusButtonText: {
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  modalFooter: {
+    flexDirection: "row",
+    padding: 15,
+    borderTopWidth: 1,
+    borderTopColor: "#eee",
+  },
+  deleteButton: {
+    flex: 1,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 12,
+    borderRadius: 5,
+    marginRight: 10,
+  },
+  deleteButtonText: {
+    fontSize: 14,
+    fontWeight: "500",
+    marginLeft: 5,
+  },
+  closeButton: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 12,
+    borderRadius: 5,
+  },
+  closeButtonText: {
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  toolbar: {
+    position: "absolute",
+    bottom: 0,
+    width: "100%",
+    flexDirection: "row",
+    justifyContent: "space-around",
+    paddingVertical: 12,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 5,
+  },
+  navIconContainer: {
+    alignItems: "center",
+  },
+  iconText: {
+    fontSize: 12,
+    marginTop: 4,
   },
 });
 
