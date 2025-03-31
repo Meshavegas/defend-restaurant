@@ -12,7 +12,7 @@ class ApiClient {
 
   constructor() {
     this.axiosInstance = axios.create({
-      baseURL: "http://192.168.1.101:8000/api/v1/",
+      baseURL: "https://boucheb.rainago.com/api/v1/",
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
