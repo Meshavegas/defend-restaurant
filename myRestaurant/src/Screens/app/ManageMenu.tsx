@@ -24,6 +24,7 @@ import PageView from "../../components/pageContainer";
 import menuService from "../../service/menuService";
 import { HeaderComponent } from "../../components/menu/HeaderComponent";
 import { TabSwitcher } from "../../components/menu/TabSwitcher";
+import * as ImagePicker from "expo-image-picker";
 
 const { width } = Dimensions.get("window");
 
@@ -77,7 +78,7 @@ const ManageMenu = () => {
   const { colors, isDarkMode } = useAppContext();
 
   // State
-  const [activeTab, setActiveTab] = useState("items");
+  const [activeTab, setActiveTab] = useState("Items");
   const [menuItems, setMenuItems] = useState<IMenuItemAndCategory[]>([]);
   const [categories, setCategories] = useState<ICategoryItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -213,7 +214,7 @@ const ManageMenu = () => {
   };
 
   // Save menu item (create or update)
-  const handleSaveItem = () => {
+  const handleSaveItem = async () => {
     // Validate form
     if (!itemForm.name || !itemForm.price || !itemForm.category_id) {
       Alert.alert("Error", "Name, price and category are required fields");
@@ -221,49 +222,42 @@ const ManageMenu = () => {
     }
 
     setIsLoading(true);
-
-    // Simulate API call
-    setTimeout(() => {
-      if (currentItem) {
-        // Update existing item
-        // setMenuItems(
-        //   menuItems.map((item) =>
-        //     item.id === currentItem.id
-        //       ? {
-        //           ...item,
-        //           name: itemForm.name,
-        //           price: Number.parseFloat(itemForm.price),
-        //           category_id: itemForm.category_id,
-        //           description: itemForm.description,
-        //           is_available: itemForm.is_available,
-        //           preparation_time: itemForm.preparation_time
-        //             ? Number.parseInt(itemForm.preparation_time)
-        //             : null,
-        //           image: itemForm.image,
-        //         }
-        //       : item
-        //   )
-        // );
-      } else {
-        // Create new item
-        const newItem = {
-          id: Date.now().toString(),
-          name: itemForm.name,
-          price: Number.parseFloat(itemForm.price),
-          category_id: itemForm.category_id,
-          description: itemForm.description,
-          is_available: itemForm.is_available,
-          preparation_time: itemForm.preparation_time
-            ? Number.parseInt(itemForm.preparation_time)
-            : null,
-          image: itemForm.image,
-        };
-        // setMenuItems([...menuItems, newItem]);
-      }
-
-      setIsLoading(false);
+    try {
+      const {
+        name,
+        description,
+        price,
+        is_available,
+        preparation_time,
+        image,
+        category_id,
+      } = itemForm;
+      const response = await menuService.createMenuItemFormData({
+        name,
+        description,
+        price,
+        is_available,
+        preparation_time,
+        image_url: image,
+        category_id,
+      });
+      const newItems = await menuService.getMenuItemsAndCategories();
+      setMenuItems(newItems);
+      setItemForm({
+        name: "",
+        price: "",
+        category_id: "",
+        description: "",
+        is_available: true,
+        preparation_time: "",
+        image: "",
+      });
       setItemModalVisible(false);
-    }, 1000);
+      setIsLoading(false);
+    } catch (error) {
+      Alert.alert("Error", "An error occurred while saving the item");
+      setIsLoading(false);
+    }
   };
 
   // Open modal for adding new category
@@ -319,8 +313,18 @@ const ManageMenu = () => {
     );
   };
 
+  useEffect(() => {
+    (async () => {
+      const { status } =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        alert("Sorry, we need camera roll permissions to make this work!");
+      }
+    })();
+  }, []);
+
   // Save category (create or update)
-  const handleSaveCategory = () => {
+  const handleSaveCategory = async () => {
     // Validate form
     if (!categoryForm.name) {
       Alert.alert("Error", "Name is required");
@@ -328,35 +332,18 @@ const ManageMenu = () => {
     }
 
     setIsLoading(true);
-
-    // Simulate API call
-    setTimeout(() => {
-      if (currentCategory) {
-        // Update existing category
-        setCategories(
-          categories.map((category) =>
-            category.id === currentCategory.id
-              ? {
-                  ...category,
-                  name: categoryForm.name,
-                  description: categoryForm.description,
-                }
-              : category
-          )
-        );
-      } else {
-        // Create new category
-        const newCategory = {
-          id: Date.now().toString(),
-          name: categoryForm.name,
-          description: categoryForm.description,
-        };
-        setCategories([...categories, newCategory]);
-      }
-
-      setIsLoading(false);
-      setCategoryModalVisible(false);
-    }, 1000);
+    menuService
+      .createCategory({
+        name: categoryForm.name,
+        description: categoryForm.description,
+      })
+      .then((response) => {
+        menuService.getCategories().then((response) => {
+          setCategories(response);
+          setIsLoading(false);
+          setCategoryModalVisible(false);
+        });
+      });
   };
 
   // Get category name by id
@@ -511,6 +498,20 @@ const ManageMenu = () => {
     </Animated.View>
   );
 
+  const handlePickImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      // Expo 48+ returns an array in result.assets
+      setItemForm({ ...itemForm, image: result.assets[0].uri });
+    }
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <HeaderComponent title="Manage Menu" onBack={() => navigation.goBack()} />
@@ -535,7 +536,7 @@ const ManageMenu = () => {
         <TextInput
           style={[styles.searchInput, { color: colors.text }]}
           placeholder={`Search ${
-            activeTab === "items" ? "menu items" : "categories"
+            activeTab.toLowerCase() === "items" ? "menu items" : "categories"
           }...`}
           placeholderTextColor={colors.textSecondary}
           value={searchQuery}
@@ -561,7 +562,7 @@ const ManageMenu = () => {
               Loading...
             </Text>
           </View>
-        ) : activeTab === "items" ? (
+        ) : activeTab?.toLowerCase() === "items" ? (
           <FlatList
             data={filteredMenuItems}
             renderItem={renderMenuItem}
@@ -842,24 +843,27 @@ const ManageMenu = () => {
               {/* Image URL Input */}
               <View style={styles.formGroup}>
                 <Text style={[styles.formLabel, { color: colors.text }]}>
-                  Image URL
+                  Image
                 </Text>
-                <TextInput
-                  style={[
-                    styles.formInput,
-                    {
-                      backgroundColor: colors.background,
-                      color: colors.text,
-                      borderColor: colors.border,
-                    },
-                  ]}
-                  placeholder="Enter image URL"
-                  placeholderTextColor={colors.textSecondary}
-                  value={itemForm.image}
-                  onChangeText={(text) =>
-                    setItemForm({ ...itemForm, image: text })
-                  }
-                />
+                {itemForm.image ? (
+                  <Image
+                    source={{ uri: itemForm.image }}
+                    style={styles.imagePreview}
+                  />
+                ) : null}
+                <TouchableOpacity
+                  style={styles.imagePickerButton}
+                  onPress={handlePickImage}
+                >
+                  <Text
+                    style={[
+                      styles.imagePickerButtonText,
+                      { color: colors.text },
+                    ]}
+                  >
+                    {itemForm.image ? "Change Image" : "Pick an Image"}
+                  </Text>
+                </TouchableOpacity>
               </View>
             </ScrollView>
 
@@ -995,6 +999,24 @@ const ManageMenu = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  imagePreview: {
+    width: "100%", // occupe toute la largeur du conteneur
+    height: 200, // hauteur fixe, ajustez selon vos besoins
+    borderRadius: 8, // arrondir les coins
+    marginBottom: 10, // espacement sous l'image
+    resizeMode: "cover", // pour bien couvrir le conteneur
+  },
+  imagePickerButton: {
+    alignItems: "center",
+    padding: 10,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 5,
+    marginVertical: 10,
+  },
+  imagePickerButtonText: {
+    fontSize: 16,
   },
   header: {
     flexDirection: "row",

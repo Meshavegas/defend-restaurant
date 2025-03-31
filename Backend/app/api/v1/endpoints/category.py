@@ -4,25 +4,19 @@ from sqlalchemy.orm import Session
 from app import crud, schemas
 from app.crud import category
 from app.api import deps
+from fastapi import Body
 
 router = APIRouter()
 
 @router.post("/", response_model=schemas.Category)
 async def create_category(
-    name: str = Form(..., description="Required"),
-    description: Optional[str] = Form(None),
+    category_in: schemas.CategoryCreate = Body(...),
     db: Session = Depends(deps.get_db)
 ):
     try:
-        category_data = {
-            "name": name.strip(),
-            "description": description.strip() if description else None
-        }
-        
-        if not name:
+        if not category_in.name:
             raise HTTPException(status_code=400, detail="Name is required")
-
-        category_in = schemas.CategoryCreate(**category_data)
+        
         return category.create_category(db, category_in)  # Changed this line
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

@@ -28,12 +28,20 @@ const MenuScreen = () => {
   const { colors, isDarkMode } = useAppContext();
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
-  const { addToBasket, basket, totalItems, menuItems } = useAuthStore();
+  const { addToBasket, basket, totalItems, menuItems, getMenuItems } =
+    useAuthStore();
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
   const basketBounce = useRef(new Animated.Value(1)).current;
 
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("focus", () => {
+      getMenuItems();
+    });
+
+    return unsubscribe;
+  }, [navigation, getMenuItems]);
   // Start animation when component mounts
   useEffect(() => {
     Animated.parallel([
@@ -52,12 +60,15 @@ const MenuScreen = () => {
 
   // Calculate total price
   const totalPrice = basket
-    .reduce(
-      (sum, item) =>
-        sum +
-        Number.parseFloat(item.price.replace(/[^0-9.-]+/g, "")) * item.quantity,
-      0
-    )
+    .reduce((sum, item) => {
+      console.log({ item });
+
+      // const priceString = item?.price || "0";
+      // const numericPrice = !isNaN(priceString)
+      //   ? Number.parseFloat(priceString.replace(/[^0-9.-]+/g, ""))
+      //   : priceString;
+      return sum + item.price * item.quantity;
+    }, 0)
     .toFixed(2);
 
   useEffect(() => {

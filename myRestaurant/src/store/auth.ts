@@ -29,6 +29,8 @@ interface AuthState {
   removeFromBasket: (item: any) => void;
   totalItems: () => number;
   getMenuItems: () => Promise<void>;
+  clearBasket: () => void;
+  reduceQuantity: (item: any) => void;
 }
 
 type AuthPersist = (
@@ -82,6 +84,30 @@ const useAuthStore = create<AuthState>(
       logout: () => {
         set({ token: null, users: null });
       },
+      reduceQuantity: (item: any) => {
+        const prevBasket = get().basket;
+
+        const itemExists = prevBasket.find(
+          (basketItem) => basketItem.id === item.id
+        );
+
+        if (itemExists) {
+          if (itemExists.quantity > 1) {
+            const updatedBasket = prevBasket.map((basketItem) =>
+              basketItem.id === item.id
+                ? { ...basketItem, quantity: basketItem.quantity - 1 }
+                : basketItem
+            );
+            set({ basket: updatedBasket });
+          } else {
+            set((state) => ({
+              basket: state.basket.filter(
+                (basketItem) => basketItem.id !== item.id
+              ),
+            }));
+          }
+        }
+      },
       addToBasket: (item: any) => {
         const prevBasket = get().basket;
 
@@ -107,6 +133,9 @@ const useAuthStore = create<AuthState>(
             (basketItem) => basketItem.id !== item.id
           ),
         }));
+      },
+      clearBasket: () => {
+        set({ basket: [] });
       },
       getMenuItems: async () => {
         try {
